@@ -1,0 +1,28 @@
+d = getDirectory("Choose a Directory");
+//files = getFileList(d);
+
+open(d + "CH1.tif");
+run("Split Channels");
+selectWindow("C1-CH1.tif");
+close();
+selectWindow("C2-CH1.tif");
+close();
+selectWindow("C3-CH1.tif");
+saveAs("Tiff", d + "CH1.tif");
+open(d + "CH2.tif");
+run("Split Channels");
+selectWindow("C1-CH2.tif");
+close();
+selectWindow("C3-CH2.tif");
+close();
+selectWindow("C2-CH2.tif");
+saveAs("Tiff", d + "CH2.tif");
+open(d + "CH3.tif");
+run("Split Channels");
+selectWindow("C2-CH3.tif");
+close();
+selectWindow("C3-CH3.tif");
+close();
+selectWindow("C1-CH3.tif");
+saveAs("Tiff", d + "CH3.tif");
+open(d + "CH4.tif");
