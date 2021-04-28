@@ -20,7 +20,7 @@ start_time = time.time() # 開始時間
 
 # パスの指定（適宜変更を）
 search_path = 'E:/Data_2021/CQ1' # 普通のスラッシュでもいける
-out_path = 'C:/Users/try21/OneDrive/デスクトップ/test'
+out_path = 'C:/Users/try21/OneDrive/デスクトップ/Screening'
 
 dir_list = os.listdir(search_path) # os.listdirでディレクトリの一覧をリストで取得できる
 
