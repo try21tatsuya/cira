@@ -24,10 +24,9 @@ for f in f_list:
     fname = os.path.basename(f) # 測定年月日_LDH_Plate-ID-date_Plate-ID-number(1-3).csv
     fname = fname.replace('_', ',').replace('.csv', ',') # カンマに変換しておく
     LDH_plate_number = int(fname.split(',')[3]) # ファイル名から、何枚目のLDHプレートかを取得して、intergerに変換
+    well_number_384 = 1 # カウンター
     odd_row_flag = True # 1行目の
     odd_col_flag = True # 1列目からスタート
-    well_number_384 = 1
-    #print(LDH_plate_number)
     with open(f) as csv_file:
         reader = csv.reader(csv_file)
         l = [row for row in reader] # 二次元のリストに変換
@@ -46,7 +45,6 @@ for f in f_list:
                 else: # 偶数行でかつ偶数列なら、もとのplate_ID_numberはLDH_plate_number+9
                     plate_ID_number = LDH_plate_number + 9
                 data = fname + str(well_number_384) + ',' + str(plate_ID_number) + ',' + str(well_number) + ',' + col
-                #print(well_number_384, odd_col_flag, odd_row_flag)
                 new_file.write(data) # 書き出す
                 new_file.write('\n')
                 if well_number_384 % 2 == 0:
