@@ -74,3 +74,7 @@ df_out.to_csv(fname, sep='\t', index=False)
 # csvとして保存
 fname2 = 'Baiyo_log_' + dt_now_str + '.csv'
 df_out.to_csv(fname2, index=False)
+
+# 最後に入力待ちにして、コマンドプロンプトを閉じない
+print('')
+input('Press Enter key...')

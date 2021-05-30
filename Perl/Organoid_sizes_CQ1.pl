@@ -32,13 +32,13 @@ foreach my $file (readdir(DIR)) {
     $new_numbers[3] = $filename[2]; # 0時を超える場合があるので、手動で入力した日付を利用する
     $new_numbers[4] = $filename[1];
     $new_numbers[5] = $numbers[1];
-    $new_numbers[6] = $numbers[2] / 2.76 * 1000; # 縮尺がおかしい
-    $new_numbers[7] = $numbers[3] / 2.76 * 1000;
+    $new_numbers[6] = $numbers[2] * (2160 / 22.5) * 1.625; # 22.5 inch = 2160 pixelで、1.625 μm/pixel、つまり156 μm/inchの換算
+    $new_numbers[7] = $numbers[3] * (2160 / 22.5) * 1.625;
     $new_numbers[8] = $numbers[5];
     $new_numbers[9] = $numbers[6];
     $new_numbers[10] = $numbers[7];
     $new_numbers[11] = $numbers[8];
-    $new_numbers[12] = $numbers[1] / 7.6176;
+    $new_numbers[12] = $numbers[1] * (156/1000)**2; # mm2
     $new_numbers[13] = $row_number-1; # オブジェクトの個数
     my $new_numbers = join(',', @new_numbers) . "\n";
     print NEWFILE $new_numbers;

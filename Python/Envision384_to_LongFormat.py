@@ -64,3 +64,7 @@ elapsed_time = time.time() - start_time # 経過秒数
 print('')
 print('Completed...')
 print('Elapsed_time: {0}'.format(round(elapsed_time, 2)) + ' sec')
+
+# 最後に入力待ちにして、コマンドプロンプトを閉じない
+print('')
+input('Press Enter key...')
