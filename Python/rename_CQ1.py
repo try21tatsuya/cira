@@ -4,6 +4,9 @@ import shutil
 import time
 from datetime import datetime
 
+# コピー元のパスを入力させる
+search_path = input('\nコピー元のパスを入力して下さい\n')
+
 # コピーする画像の検索条件を入力させる
 try:
     start_date = datetime.strptime(input('\nコピーを行う開始日を入力\n'), '%Y%m%d')
@@ -19,7 +22,6 @@ except ValueError as e:
 start_time = time.time() # 開始時間
 
 # パスの指定（適宜変更を）
-search_path = 'H:/Data_2021/CQ1' # 普通のスラッシュでもいける
 out_path = 'C:/Users/try21/OneDrive/デスクトップ/Screening'
 
 dir_list = os.listdir(search_path) # os.listdirでディレクトリの一覧をリストで取得できる
