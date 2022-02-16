@@ -13,7 +13,7 @@ dt_now = datetime.datetime.now()
 dt_now_str = dt_now.strftime('%Y%m%d%H%M')
 
 # パスの指定（適宜変更を）
-path = 'G:/Data/Envision/renamed/*/*ATP*.csv' # 普通のスラッシュでもいける
+path = 'H:/20210530_Shimizu_new/Envision/renamed/*/*ATP*.csv' # 普通のスラッシュでもいける
 out_path = 'C:/Users/try21/OneDrive/デスクトップ/ATP_results_' + dt_now_str + '.csv'
 
 new_file = open(out_path, 'w') # 書き出すファイル
