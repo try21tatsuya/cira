@@ -12,7 +12,7 @@ Center = false;
 Result = true;
 
 // 確認用の画像を全て出力するかどうか
-Debug = true;
+Debug = false;
 
 if (Debug) {
 	Mask = true;
@@ -40,10 +40,7 @@ for (i = 0; i < files.length; i++) {
 	if (!File.isDirectory(fname)) {
 		open(fname);
 		run("8-bit");
-
 		processImage(); // メイン関数
-		
-		run("Close");
 		run("Close All"); 
 	}
 }
@@ -54,11 +51,11 @@ run("Close All");
 
 function processImage() {
 	makeMasks();
-	makeEdges(5, 100);
-	findOrg(); // Otsuによるbinary画像と輪郭抽出によるbinary画像を組み合わせて、オルガノイドのbinary画像(Org1.tif)を作成する
+	makeEdges();
+	findOrg(); // OtsuとEdgeを組み合わせて、オルガノイドのbinary画像(Org1.tif)を作成する
 	findNotOrg();
-	closeCyst(); // Org1.tifを入力として、もう少しで閉じそうな辺縁部のCystを閉じて、Org2.tifとして再保存する
-	analyseOrg(); // Org2.tifを入力として面積の計測までを行い、"Results"を表示する
+	closeCyst(); // Org1を入力として、もう少しで閉じそうな辺縁部のCystを閉じる
+	analyseOrg(); // さらにオルガノイドの面積の計測までを行いOrg2として保存し、Resultsを表示する
 	largeCentroid = getCentroid(0.84, true); // "Results"から、重心を特定するのに必要な値をピクセル数として取得する。Centroid = [Minor, alpha, X, Y]
 	middleCentroid = getCentroid(0.79, true);
 	smallCentroid = getCentroid(0.78, false);
@@ -77,19 +74,18 @@ function processImage() {
 // 以下に関数
 function makeMasks() {
 	rename("raw.tif");
-	run("Duplicate...", "title=Edge.tif");
-	run("Duplicate...", "title=Otsu.tif");
+	run("Duplicate...", "title=Copy1.tif");
+	run("Duplicate...", "title=Copy2.tif");
 	
 	// Otsuによるbinary画像の作成
-	selectWindow("Otsu.tif");
 	setAutoThreshold("Otsu");
 	run("Convert to Mask");
 	
 	// 画像の出力の有無
 	if (Mask) {
 		saveAs(".tif", fname + "_Otsu.tif");
-		rename("Otsu.tif");
 	}
+	rename("Otsu.tif");
 }
 
 // ----------------------------------------------------------------------------------------------------
@@ -103,12 +99,12 @@ function removeBorder() { // オルガノイドが画像の「中央付近で」
 }
 
 // ----------------------------------------------------------------------------------------------------
-
-function makeEdges(sigma, rolling) {
-	selectWindow("Edge.tif");
-	run("Gaussian Blur...", "sigma=sigma"); // 前処理
+function makeEdges() {
+	selectWindow("Copy1.tif");
+	run("Unsharp Mask...", "radius=1 mask=0.60"); // 前処理
+	run("Gaussian Blur...", "sigma=5");
 	run("Find Edges");
-	run("Subtract Background...", "rolling=rolling sliding"); // ここでバックグラウンド減算をかける
+	run("Subtract Background...", "rolling=100 sliding"); // ここでバックグラウンド減算をかける
 	setAutoThreshold("Otsu dark");
 	run("Convert to Mask");
 	removeBorder();
@@ -118,25 +114,24 @@ function makeEdges(sigma, rolling) {
 	for (a = 0; a < 3; a++) {
 		run("Median...", "radius=3");
 	}
+	for (b = 0; b < 3; b++) {
+		run("Dilate");
+	}
+	run("Skeletonize");
 
 	// 画像の出力の有無
 	if (Edge) {
 		saveAs(".tif", fname + "_Edge.tif");
-		rename("Mask of Edge.tif");
 	}
+	rename("Edge.tif");
 }
 
 // ----------------------------------------------------------------------------------------------------
 
 function findOrg() {
 	selectWindow("Otsu.tif");
-	run("Duplicate...", "title=Otsu1.tif");
-	run("Fill Holes"); // この時点で閉じられるCystは閉じる
-	
-	selectWindow("Mask of Edge.tif");
-	run("Analyze Particles...", "size=0.02-Infinity show=Masks exclude"); // 次に細かい粒子は除いておく
-	run("Skeletonize");
-	imageCalculator("OR create", "Otsu1.tif", "Mask of Edge.tif");
+	run("Duplicate...", "title=Otsu1.tif");	
+	imageCalculator("OR create", "Otsu1.tif", "Edge.tif");
 	run("Fill Holes"); // ここで閉じられるようになったCystも閉じる
 	run("Open");
 	run("Analyze Particles...", "size=25-Infinity show=Masks");
@@ -150,27 +145,37 @@ function findOrg() {
 // ----------------------------------------------------------------------------------------------------
 
 function findNotOrg() {
-	selectWindow("Org1.tif");
+	selectWindow("raw.tif");
 	run("Duplicate...", "title=notOrg1.tif");
+	run("Unsharp Mask...", "radius=2 mask=0.60");
+	setAutoThreshold("Otsu");
+	run("Convert to Mask");
+	run("Analyze Particles...", "size=0.02-Infinity show=Masks"); // 最初に細かい粒子は除去する
+	run("Median...", "radius=3"); // 大まかな形を特定する
 	run("Options...", "iterations=1 count=1 pad do=Nothing");
 	for (a = 0; a < 3; a++) {
 		run("Erode");
 	}
-	run("Options...", "iterations=1 count=1 do=Nothing");
-	run("Gaussian Blur...", "sigma=8"); // ぼかしが強いとOrgとnotOrgが融合してExludeされてしまう
+	run("Gaussian Blur...", "sigma=5"); // ぼかしが強いとOrgとnotOrgが融合してExludeされてしまう
 	setAutoThreshold("Shanbhag");
 	run("Convert to Mask");
+	for (b = 0; b < 4; b++) {
+		run("Erode");
+	}
+	run("Options...", "iterations=1 count=1 do=Nothing");
+	run("Analyze Particles...", "size=0.2-Infinity show=Masks"); // 小さい孤立した領域は無視する
 	run("Duplicate...", "title=notOrg2.tif");
 	removeBorder();
-	run("Analyze Particles...", "size=25-Infinity show=Masks exclude");
+	run("Analyze Particles...", "size=20-Infinity show=Masks exclude");
 	run("Create Selection");
-	selectWindow("notOrg1.tif");
+	selectWindow("Mask of Mask of notOrg1.tif");
 	run("Restore Selection");
 	run("Clear", "slice");
 	run("Select None");
-	for (b = 0; b < 8; b++) {
+	for (c = 0; c < 30; c++) {
 		run("Dilate");
 	}
+	run("Fill Holes");
 	makeSmallObject(); // オブジェクトがなかった場合に備えて、makeSmallObjectしておく
 
 	// 画像の出力の有無
@@ -233,17 +238,18 @@ function drawCentroid(Centroid) {
 
 function analyseOrg() {
 	selectWindow("Result of Outline.tif");
-	run("Analyze Particles...", "size=25-Infinity show=Masks display clear");
+	removeBorder();
+	run("Analyze Particles...", "size=25-Infinity show=Masks display exclude clear");
 
 	// 画像の出力の有無
 	if (Mask) {
-		saveAs(".tif", fname + "_Org.tif");
+		saveAs(".tif", fname + "_Org2.tif");
 	}
 	rename("Org2.tif");
 	
 	if (CSV & isOpen("Results")) { // resultがなければスキップ
 		selectWindow("Results");
-		Table.sort("Area"); //オブジェクトを2個以上認識した場合に備えて、Areaで昇順にソートしておく
+		Table.sort("AR"); //オブジェクトを2個以上認識した場合に備えて、ARで昇順にソートしておく
 		saveAs("Results", fname + "_Org.csv");
 	} else {
 		if (isOpen("Results")) {
@@ -262,7 +268,7 @@ function findPeripheral1(sigma) {
 	}
 	run("Create Selection");
 	selectWindow("raw.tif");
-	run("Duplicate...", "title=Copy1.tif");
+	run("Duplicate...", "title=Copy3.tif");
 	run("Restore Selection");
 	run("Clear Outside");
 	run("Select None"); // Selectionを先に解除する
@@ -276,9 +282,9 @@ function findPeripheral1(sigma) {
 	// 画像の出力の有無
 	if (Skeleton) {
 		saveAs(".tif", fname + "_Skeleton1.tif");
-		rename("Copy1.tif");
 	}
-
+	rename("Skeleton1.tif");
+	
 	selectWindow("bigOrg.tif");
 	run("Select None"); // Selectionを解除しないと、Duplicateした時にCropされてしまう
 	run("Outline");
@@ -286,7 +292,7 @@ function findPeripheral1(sigma) {
 		run("Dilate");
 	}
 	run("Create Selection");
-	selectWindow("Copy1.tif");
+	selectWindow("Skeleton1.tif");
 	run("Restore Selection");
 	run("Clear", "slice");
 	
@@ -294,13 +300,13 @@ function findPeripheral1(sigma) {
 	if (Skeleton) {
 		saveAs(".tif", fname + "_Skeleton2.tif");
 	}
-	rename("Skeleton.tif");
+	rename("Skeleton2.tif");
 
 	run("Select None"); // Selectionを解除しないと、Duplicateした時にCropされてしまう
-	run("Duplicate...", "title=Copy2.tif");
+	run("Duplicate...", "title=Skeleton3.tif");
 	run("Fill Holes");
 	run("Open");
-	run("Analyze Particles...", "size=0.22-Infinity show=Masks");
+	run("Analyze Particles...", "size=0.35-Infinity show=Masks");
 
 	if (Peripheral) {
 		saveAs(".tif", fname + "_Peripheral1.tif");
@@ -344,7 +350,7 @@ function findPeripheral2(sigma) {
 
 function findCenter(sigma) {
 	selectWindow("raw.tif");
-	run("Duplicate...", "title=Copy2.tif");
+	run("Duplicate...", "title=Copy4.tif");
 	drawCentroid(largeCentroid);
 	run("Clear Outside");
 	run("Gaussian Blur...", "sigma=sigma"); // 前処理
@@ -362,7 +368,7 @@ function findCenter(sigma) {
 	drawCentroid(smallCentroid);
 	run("Clear Outside");
 	
-	run("Analyze Particles...", "size=0.5-Infinity circularity=0.3-1.00 show=Masks"); // 大きめのオブジェクトのみに限定
+	run("Analyze Particles...", "size=0.5-Infinity circularity=0.35-1.00 show=Masks"); // 大きめのオブジェクトのみに限定
 	
 	if (Center) {
 		saveAs(".tif", fname + "_Center.tif");

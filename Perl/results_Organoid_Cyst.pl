@@ -11,10 +11,10 @@ my $Org_file = 'Org_' . $str_time . '.csv';
 my $Cyst_file = 'Cyst_' . $str_time . '.csv';
 
 open(ORGFILE, '>', $Org_file) or die "$!";
-print ORGFILE 'Experiment_date,Experiment_number,Acquisition_date,Acquisition_protocol,Image_number,Organoid_Area_inches2,Organoid_X,Organoid_Y,Organoid_Major,Organoid_Minor,Organoid_Angle,Organoid_Circularity,Organoid_AR,Organoid_Roundness,Organoid_Solidity', "\n";
+print ORGFILE 'Experiment_date,Experiment_number,Acquisition_date,Acquisition_series,Variables,Acquisition_protocol,Image_number,Organoid_Area_inches2,Organoid_X,Organoid_Y,Organoid_Major,Organoid_Minor,Organoid_Angle,Organoid_Circularity,Organoid_AR,Organoid_Roundness,Organoid_Solidity', "\n";
 
 open(CYSTFILE, '>', $Cyst_file) or die "$!";
-print CYSTFILE 'Experiment_date,Experiment_number,Acquisition_date,Acquisition_protocol,Image_number,Cyst_ID,Cyst_Area_inches2,Cyst_X,Cyst_Y,Cyst_Major,Cyst_Minor,Cyst_Angle,Cyst_Circularity,Cyst_AR,Cyst_Roundness,Cyst_Solidity', "\n";
+print CYSTFILE 'Experiment_date,Experiment_number,Acquisition_date,Acquisition_series,Variables,Acquisition_protocol,Image_number,Cyst_ID,Cyst_Area_inches2,Cyst_X,Cyst_Y,Cyst_Major,Cyst_Minor,Cyst_Angle,Cyst_Circularity,Cyst_AR,Cyst_Roundness,Cyst_Solidity', "\n";
 
 my $input_dir = '.'; #カレントディレクトリで実行する
 opendir(DIR, $input_dir) or die "$input_dir: $!";
@@ -24,9 +24,9 @@ foreach my $file (readdir(DIR)) {
     if ($file =~ /csv$/) {
         open(FILE, "$input_dir\/$file") or die "$!\n"; # 先にファイルを開く
         my @rows = <FILE>;
-        $file =~ s/\./_/g; # ファイル名の'.'を'_'に置換する
-        my @fname = split(/_/, $file); # 最初の5列には、ファイル名からの情報を記録
-        @fname = splice(@fname, 0, 5);
+        $file =~ s/\./\_/g; # ファイル名の'.'を'_'に置換する
+        my @fname = split(/_/, $file); # 最初の7列には、ファイル名からの情報を記録
+        @fname = splice(@fname, 0, 7);
         my $fname = join(',', @fname);
         # まず「Org.csv」を処理
         if ($file =~ /Org.csv$/) {
